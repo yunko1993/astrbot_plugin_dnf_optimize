@@ -8,7 +8,7 @@ from astrbot.api.message_components import At, Plain
 
 logger = logging.getLogger("astrbot")
 
-@register("astrbot_plugin_dnf_optimize", "qingcai", "DNF小团体优化助手", "1.2.3")
+@register("astrbot_plugin_dnf_optimize", "qingcai", "DNF小团体优化助手", "1.2.5")
 class DnfOptimizePlugin(Star):
     def __init__(self, context: Context):
         super().__init__(context)
@@ -16,7 +16,7 @@ class DnfOptimizePlugin(Star):
         self.db_path = os.path.join(self.data_dir, "config.json")
         os.makedirs(self.data_dir, exist_ok=True)
         self.config = self._load_config()
-        logger.info(f"===== [优化助手] 1.2.4 艾特修复版已加载 =====")
+        logger.info(f"===== [优化助手] 1.2.5 强制艾特版已加载 =====")
 
     def _load_config(self):
         if os.path.exists(self.db_path):
@@ -47,9 +47,11 @@ class DnfOptimizePlugin(Star):
         msg_str = event.get_message_str()
         if msg_str.startswith("/"): return 
 
+        # 1. 关键词命中检查
         matched = any(word in msg_str for word in self.config.get("keywords", []))
         if not matched: return
 
+        # 2. 识别被优化的倒霉蛋
         target_id = ""
         for seg in event.get_messages():
             if isinstance(seg, At): target_id = str(seg.qq)
@@ -58,6 +60,7 @@ class DnfOptimizePlugin(Star):
         
         if not target_id: return
 
+        # 3. 组织辞退圣经
         optimize_text = (
             "您的伤害太低了，小团体已经复盘完了，不得不非常遗憾地通知您：\n\n"
             "我们这边做了同装备同打造的打法和实战对比，也做了历史数据溯源回顾，"
@@ -67,12 +70,15 @@ class DnfOptimizePlugin(Star):
             "您已被优化，请勿回复。"
         )
 
+        # 4. 核心逻辑修改：先停止事件，再用强制发信接口
         event.stop_event()
+        logger.info(f"===== [优化助手] 正在强制发送艾特消息给: {target_id} =====")
         
-        # 【核心修正】在 At 后面强制加一个空格，并合并 Plain
-        yield event.chain_result([
-            At(qq=target_id), 
-            Plain(f" \n\n{optimize_text}") # 注意 At 后面的这个空格
+        # 使用 send_conf_message 绕过 yield 解析 Bug
+        await event.send_conf_message([
+            At(qq=target_id),
+            Plain(" \n\n"), # 在 At 后面加一个空格有助于某些客户端识别
+            Plain(optimize_text)
         ])
 
     @filter.command("opt_add")
