@@ -16,7 +16,7 @@ class DnfOptimizePlugin(Star):
         self.db_path = os.path.join(self.data_dir, "config.json")
         os.makedirs(self.data_dir, exist_ok=True)
         self.config = self._load_config()
-        logger.info(f"===== [优化助手] 1.2.5 强制艾特版已加载 =====")
+        logger.info(f"===== [优化助手] 1.2.6 结构化发信版已加载 =====")
 
     def _load_config(self):
         if os.path.exists(self.db_path):
@@ -54,9 +54,12 @@ class DnfOptimizePlugin(Star):
         # 2. 识别被优化的倒霉蛋
         target_id = ""
         for seg in event.get_messages():
-            if isinstance(seg, At): target_id = str(seg.qq)
-            elif hasattr(seg, 'type') and seg.type == "at": target_id = str(seg.data.get("qq") or seg.data.get("user_id", ""))
-            elif hasattr(seg, 'qq') and seg.qq: target_id = str(seg.qq)
+            if isinstance(seg, At): 
+                target_id = str(seg.qq)
+            elif hasattr(seg, 'type') and seg.type == "at": 
+                target_id = str(seg.data.get("qq") or seg.data.get("user_id", ""))
+            elif hasattr(seg, 'qq') and seg.qq: 
+                target_id = str(seg.qq)
         
         if not target_id: return
 
@@ -70,15 +73,16 @@ class DnfOptimizePlugin(Star):
             "您已被优化，请勿回复。"
         )
 
-        # 4. 核心逻辑修改：先停止事件，再用强制发信接口
+        # 4. 拦截并发送
         event.stop_event()
-        logger.info(f"===== [优化助手] 正在强制发送艾特消息给: {target_id} =====")
+        logger.info(f"===== [优化助手] 匹配成功，正在 yield 消息链给: {target_id} =====")
         
-        # 使用 send_conf_message 绕过 yield 解析 Bug
-        await event.send_conf_message([
-            At(qq=target_id),
-            Plain(" \n\n"), # 在 At 后面加一个空格有助于某些客户端识别
-            Plain(optimize_text)
+        # 【结构化修正】将每个部分物理隔离开，确保适配器能正确解析组件
+        yield event.chain_result([
+            At(qq=target_id),      # 艾特组件
+            Plain(" "),            # 强制空格隔离，防止艾特链接失效
+            Plain("\n\n"),         # 独立的换行组件
+            Plain(optimize_text)   # 独立的文本正文
         ])
 
     @filter.command("opt_add")
