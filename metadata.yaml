@@ -1,6 +1,6 @@
 name: astrbot_plugin_dnf_optimize
 desc: "DNF小团体辞退圣经助手。当有人 @某人 并且包含关键词时，自动触发专业优化通知。"
-version: "1.2.3"
+version: "1.2.5"
 author: "qingcai"
 repo: "https://github.com/yunko1993/astrbot_plugin_dnf_optimize"
 tags:
