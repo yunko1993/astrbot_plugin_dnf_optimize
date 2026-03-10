@@ -4,22 +4,19 @@ import logging
 from astrbot.api.event import filter
 from astrbot.api.star import Context, Star, register
 from astrbot.core.platform import AstrMessageEvent
-# 导入 Plain 组件
 from astrbot.api.message_components import At, Plain 
 
 logger = logging.getLogger("astrbot")
 
-@register("astrbot_plugin_dnf_optimize", "qingcai", "DNF小团体优化助手", "1.2.3")
+@register("astrbot_plugin_dnf_optimize", "qingcai", "DNF小团体优化助手", "1.2.4")
 class DnfOptimizePlugin(Star):
     def __init__(self, context: Context):
         super().__init__(context)
         self.data_dir = os.path.join("data", "plugin_data", "astrbot_plugin_dnf_optimize")
         self.db_path = os.path.join(self.data_dir, "config.json")
         os.makedirs(self.data_dir, exist_ok=True)
-        
-        # 加载配置
         self.config = self._load_config()
-        logger.info(f"===== [优化助手] 1.2.3 消息组件修复版已加载 =====")
+        logger.info(f"===== [优化助手] 1.2.4 艾特修复版已加载 =====")
 
     def _load_config(self):
         if os.path.exists(self.db_path):
@@ -72,11 +69,10 @@ class DnfOptimizePlugin(Star):
 
         event.stop_event()
         
-        # 【核心修复】所有的文本必须用 Plain() 包裹
+        # 【核心修正】在 At 后面强制加一个空格，并合并 Plain
         yield event.chain_result([
             At(qq=target_id), 
-            Plain("\n\n"), 
-            Plain(optimize_text)
+            Plain(f" \n\n{optimize_text}") # 注意 At 后面的这个空格
         ])
 
     @filter.command("opt_add")
