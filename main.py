@@ -8,7 +8,7 @@ from astrbot.api.message_components import At, Plain
 
 logger = logging.getLogger("astrbot")
 
-@register("astrbot_plugin_dnf_optimize", "qingcai", "DNF小团体优化助手", "1.2.4")
+@register("astrbot_plugin_dnf_optimize", "qingcai", "DNF小团体优化助手", "1.2.3")
 class DnfOptimizePlugin(Star):
     def __init__(self, context: Context):
         super().__init__(context)
