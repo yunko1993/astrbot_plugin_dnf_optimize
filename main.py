@@ -4,11 +4,12 @@ import logging
 from astrbot.api.event import filter
 from astrbot.api.star import Context, Star, register
 from astrbot.core.platform import AstrMessageEvent
-from astrbot.api.message_components import At
+# 导入 Plain 组件
+from astrbot.api.message_components import At, Plain 
 
 logger = logging.getLogger("astrbot")
 
-@register("astrbot_plugin_dnf_optimize", "qingcai", "DNF小团体优化助手", "1.2.2")
+@register("astrbot_plugin_dnf_optimize", "qingcai", "DNF小团体优化助手", "1.2.3")
 class DnfOptimizePlugin(Star):
     def __init__(self, context: Context):
         super().__init__(context)
@@ -18,7 +19,7 @@ class DnfOptimizePlugin(Star):
         
         # 加载配置
         self.config = self._load_config()
-        logger.info(f"===== [优化助手] 1.2.2 修复发送报错版已加载 =====")
+        logger.info(f"===== [优化助手] 1.2.3 消息组件修复版已加载 =====")
 
     def _load_config(self):
         if os.path.exists(self.db_path):
@@ -28,7 +29,6 @@ class DnfOptimizePlugin(Star):
             except Exception as e:
                 logger.error(f"读取配置失败: {e}")
         
-        # 初始默认配置并强制生成文件
         default_config = {
             "admin_qq": ["1023902556"], 
             "keywords": ["优化", "伤害低", "奶太小", "奶小", "没伤害", "输出低", "太菜", "垃圾数据"]
@@ -45,17 +45,14 @@ class DnfOptimizePlugin(Star):
         with open(self.db_path, "w", encoding="utf-8") as f:
             json.dump(self.config, f, ensure_ascii=False, indent=4)
 
-    # --- 核心逻辑：监听辞退圣经 ---
     @filter.event_message_type(filter.EventMessageType.ALL)
     async def handle_optimize(self, event: AstrMessageEvent):
         msg_str = event.get_message_str()
         if msg_str.startswith("/"): return 
 
-        # 检查关键词
         matched = any(word in msg_str for word in self.config.get("keywords", []))
         if not matched: return
 
-        # 识别被优化的倒霉蛋
         target_id = ""
         for seg in event.get_messages():
             if isinstance(seg, At): target_id = str(seg.qq)
@@ -63,8 +60,6 @@ class DnfOptimizePlugin(Star):
             elif hasattr(seg, 'qq') and seg.qq: target_id = str(seg.qq)
         
         if not target_id: return
-
-        logger.info(f"===== [优化助手] 命中关键词，准备发送圣经给: {target_id} =====")
 
         optimize_text = (
             "您的伤害太低了，小团体已经复盘完了，不得不非常遗憾地通知您：\n\n"
@@ -75,14 +70,13 @@ class DnfOptimizePlugin(Star):
             "您已被优化，请勿回复。"
         )
 
-        # 拦截大模型
         event.stop_event()
         
-        # 【修复点】使用 yield chain_result 发送复合消息段
+        # 【核心修复】所有的文本必须用 Plain() 包裹
         yield event.chain_result([
             At(qq=target_id), 
-            "\n\n", 
-            optimize_text
+            Plain("\n\n"), 
+            Plain(optimize_text)
         ])
 
     @filter.command("opt_add")
